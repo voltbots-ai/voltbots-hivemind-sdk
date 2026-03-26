@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@voltbots/hivemind": "*"
+    "@voltbots/hivemind": "^0.1.0"
   },
   "engines": {
     "node": ">=18"

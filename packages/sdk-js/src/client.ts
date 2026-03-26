@@ -55,9 +55,11 @@ export class HiveMind {
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
     this.source = options.source ?? 'sdk';
     this.version = options.version ?? SDK_VERSION;
-    this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+    const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+    this.maxRetries = maxRetries < 0 ? 0 : maxRetries;
     this.retryBaseMs = options.retryBaseMs ?? DEFAULT_RETRY_BASE_MS;
-    this.timeout = options.timeout ?? DEFAULT_TIMEOUT;
+    const timeout = options.timeout ?? DEFAULT_TIMEOUT;
+    this.timeout = timeout > 0 ? timeout : DEFAULT_TIMEOUT;
     this._fetch = options.fetch ?? globalThis.fetch;
   }
 
@@ -125,10 +127,8 @@ export class HiveMind {
           lastError = err;
 
           if (attempt < this.maxRetries) {
-            const backoff = Math.min(
-              err.retryAfterMs,
-              this.retryBaseMs * Math.pow(2, attempt),
-            );
+            const exponentialBackoff = this.retryBaseMs * Math.pow(2, attempt);
+            const backoff = Math.max(err.retryAfterMs, exponentialBackoff);
             await sleep(backoff);
             continue;
           }

@@ -18,13 +18,13 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist *.tsbuildinfo",
-    "test": "echo 'no tests yet'",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "@voltbots/hivemind": "*"
+    "@voltbots/hivemind": "^0.1.0"
   },
   "engines": {
     "node": ">=18"

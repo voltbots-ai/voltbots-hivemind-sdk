@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import time
 from typing import Any
 
 import httpx
@@ -60,9 +59,9 @@ class HiveMind:
         self._base_url = base_url.rstrip("/")
         self._source = source
         self._version = version
-        self._max_retries = max_retries
+        self._max_retries = max(0, max_retries)
         self._retry_base_s = retry_base_s
-        self._timeout = timeout
+        self._timeout = timeout if timeout > 0 else DEFAULT_TIMEOUT
         self._owns_client = http_client is None
         self._client = http_client or httpx.AsyncClient(timeout=timeout)
 
@@ -121,9 +120,10 @@ class HiveMind:
                     err = RateLimitError(body)
                     last_error = err
                     if attempt < self._max_retries:
-                        backoff = min(
+                        exponential_backoff = self._retry_base_s * (2 ** attempt)
+                        backoff = max(
                             err.retry_after_ms / 1000,
-                            self._retry_base_s * (2 ** attempt),
+                            exponential_backoff,
                         )
                         await asyncio.sleep(backoff)
                         continue

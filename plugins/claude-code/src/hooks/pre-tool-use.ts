@@ -14,7 +14,7 @@
  * Writes hook output to stdout.
  */
 
-import { HiveMind, enhancePrompt } from '@voltbots/hivemind';
+import { HiveMind } from '@voltbots/hivemind';
 
 interface HookInput {
   tool_name: string;
