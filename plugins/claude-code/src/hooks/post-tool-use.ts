@@ -8,9 +8,13 @@
  *   HIVEMIND_API_KEY    — required
  *   HIVEMIND_BASE_URL   — optional
  *   HIVEMIND_PROJECT_ID — required
+ *   HIVEMIND_MODEL      — optional (default: claude-sonnet-4)
+ *   HIVEMIND_FAMILY     — optional (default: anthropic)
+ *   HIVEMIND_TIER       — optional (default: balanced)
  */
 
 import { HiveMind } from '@voltbots/hivemind';
+import type { ProviderFamily } from '@voltbots/hivemind';
 
 interface HookInput {
   tool_name: string;
@@ -46,9 +50,9 @@ async function main(): Promise<void> {
     await client.submitTrace({
       projectId,
       tool: input.tool_name,
-      model: 'claude-sonnet-4',
-      family: 'anthropic',
-      tier: 'balanced',
+      model: process.env['HIVEMIND_MODEL'] ?? 'claude-sonnet-4',
+      family: (process.env['HIVEMIND_FAMILY'] ?? 'anthropic') as ProviderFamily,
+      tier: process.env['HIVEMIND_TIER'] ?? 'balanced',
       input: input.tool_input,
       output: input.tool_output ?? null,
       success: !input.error,
