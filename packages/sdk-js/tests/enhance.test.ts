@@ -12,6 +12,8 @@ describe('enhancePrompt', () => {
           severity: 'high',
           prevention: 'Use optional chaining',
           rootCause: 'Assumed non-null',
+          source: 'project',
+          bot: 'cleo',
         },
       ],
       injectionText: 'KNOWN ISSUES IN THIS PROJECT:\n- [high] Often misses null checks',

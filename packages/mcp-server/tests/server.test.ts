@@ -53,7 +53,7 @@ describe('MCP Server', () => {
   it('get_warnings returns injection text when present', async () => {
     const hm = mockClient({
       getWarnings: vi.fn().mockResolvedValue({
-        warnings: [{ type: 'null_check', pattern: 'Misses null checks', severity: 'high', prevention: 'Check first', rootCause: 'Assumed non-null' }],
+        warnings: [{ type: 'null_check', pattern: 'Misses null checks', severity: 'high', prevention: 'Check first', rootCause: 'Assumed non-null', source: 'project', bot: 'cleo' }],
         injectionText: 'KNOWN ISSUES:\n- Misses null checks',
         meta: {},
       }),

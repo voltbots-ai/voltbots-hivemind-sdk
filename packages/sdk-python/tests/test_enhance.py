@@ -12,6 +12,8 @@ def test_enhance_with_injection_text():
                 severity="high",
                 prevention="Use optional chaining",
                 rootCause="Assumed non-null",
+                source="project",
+                bot="cleo",
             )
         ],
         injectionText="KNOWN ISSUES:\n- Misses null checks",

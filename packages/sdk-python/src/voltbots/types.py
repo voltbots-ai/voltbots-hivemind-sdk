@@ -82,8 +82,10 @@ class Warning(BaseModel):
     type: str
     pattern: str
     severity: Severity
-    prevention: str
-    root_cause: str = Field(alias="rootCause")
+    prevention: str | None
+    root_cause: str | None = Field(alias="rootCause")
+    source: Literal["project", "knowledge"]
+    bot: str | None
 
 
 class WarningsResponse(BaseModel):

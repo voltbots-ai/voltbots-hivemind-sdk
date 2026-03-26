@@ -103,8 +103,10 @@ export interface Warning {
   type: string;
   pattern: string;
   severity: Severity;
-  prevention: string;
-  rootCause: string;
+  prevention: string | null;
+  rootCause: string | null;
+  source: 'project' | 'knowledge';
+  bot: string | null;
 }
 
 export interface WarningsResponse {

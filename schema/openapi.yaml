@@ -45,7 +45,7 @@ components:
 
     Warning:
       type: object
-      required: [type, pattern, severity, prevention, rootCause]
+      required: [type, pattern, severity, prevention, rootCause, source, bot]
       properties:
         type:
           type: string
@@ -55,8 +55,16 @@ components:
           $ref: '#/components/schemas/Severity'
         prevention:
           type: string
+          nullable: true
         rootCause:
           type: string
+          nullable: true
+        source:
+          type: string
+          enum: [project, knowledge]
+        bot:
+          type: string
+          nullable: true
 
     ReviewFinding:
       type: object

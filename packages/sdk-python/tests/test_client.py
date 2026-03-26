@@ -31,6 +31,8 @@ async def test_get_warnings(client: HiveMind):
                         "severity": "high",
                         "prevention": "Use optional chaining",
                         "rootCause": "Assumed non-null",
+                        "source": "project",
+                        "bot": "cleo",
                     }
                 ],
                 "injectionText": "KNOWN ISSUES:\n- Misses null checks",
