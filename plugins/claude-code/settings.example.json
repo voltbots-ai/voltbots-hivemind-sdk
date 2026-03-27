@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "voltbots-hivemind": {
+      "command": "npx",
+      "args": ["-y", "@voltbots/mcp-hivemind"],
+      "env": {
+        "HIVEMIND_API_KEY": "your-api-key-here"
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "write_to_file|edit_file|create_file",
+        "command": "node ./node_modules/@voltbots/claude-code-plugin/dist/hooks/pre-tool-use.js"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "command": "node ./node_modules/@voltbots/claude-code-plugin/dist/hooks/post-tool-use.js"
+      }
+    ]
+  }
+}

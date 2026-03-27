@@ -1,0 +1,552 @@
+openapi: 3.1.0
+info:
+  title: VoltBots Hivemind API
+  version: 0.1.0
+  description: |
+    Public API for the VoltBots Hivemind collective AI intelligence platform.
+    Learn from every AI's mistakes so yours doesn't repeat them.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  contact:
+    name: VoltBots
+    url: https://voltbots.com
+
+servers:
+  - url: https://api.voltbots.com
+    description: Production
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    ProviderFamily:
+      type: string
+      enum: [openai, anthropic, google, xai, volt]
+
+    Severity:
+      type: string
+      enum: [low, medium, high, critical]
+
+    MemoryType:
+      type: string
+      enum: [decision, error, preference, context, environment, user_style]
+
+    Importance:
+      type: string
+      enum: [critical, important, notable]
+
+    Warning:
+      type: object
+      required: [type, pattern, severity, prevention, rootCause, source, bot]
+      properties:
+        type:
+          type: string
+        pattern:
+          type: string
+        severity:
+          $ref: '#/components/schemas/Severity'
+        prevention:
+          type: string
+          nullable: true
+        rootCause:
+          type: string
+          nullable: true
+        source:
+          type: string
+          enum: [project, knowledge]
+        bot:
+          type: string
+          nullable: true
+
+    ReviewFinding:
+      type: object
+      required: [severity, description]
+      properties:
+        severity:
+          type: string
+        description:
+          type: string
+        line:
+          type: integer
+        suggestion:
+          type: string
+
+    Memory:
+      type: object
+      required: [id, type, content, importance, tags, relatedFiles, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/MemoryType'
+        content:
+          type: string
+        importance:
+          $ref: '#/components/schemas/Importance'
+        tags:
+          type: array
+          items:
+            type: string
+        relatedFiles:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: query
+      required: true
+      schema:
+        type: string
+
+paths:
+  /v1/hivemind/warnings:
+    get:
+      operationId: getWarnings
+      summary: Get model-specific warnings
+      description: Returns known issues and patterns for a project to inject into AI context before it acts.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: filePath
+          in: query
+          schema:
+            type: string
+        - name: domain
+          in: query
+          schema:
+            type: string
+        - name: authorModel
+          in: query
+          schema:
+            type: string
+        - name: authorFamily
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProviderFamily'
+      responses:
+        '200':
+          description: Warnings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [warnings, injectionText, meta]
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Warning'
+                  injectionText:
+                    type: string
+                    nullable: true
+                  meta:
+                    type: object
+        '400':
+          description: Missing required parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  retryAfterMs:
+                    type: integer
+
+  /v1/hivemind/review:
+    post:
+      operationId: submitReview
+      summary: Request cross-family code review
+      description: Submit code for review by a model from a different AI family than the author.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, diff, filePath, language, authorModel, authorFamily]
+              properties:
+                projectId:
+                  type: string
+                  minLength: 1
+                diff:
+                  type: string
+                  minLength: 1
+                  maxLength: 500000
+                filePath:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                language:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                authorModel:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                authorFamily:
+                  $ref: '#/components/schemas/ProviderFamily'
+                context:
+                  type: string
+                  maxLength: 10000
+      responses:
+        '200':
+          description: Review completed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [findings, reviewerBot, reviewerModel, reviewerTier, reviewerFamily, meta]
+                properties:
+                  findings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReviewFinding'
+                  reviewerBot:
+                    type: string
+                  reviewerModel:
+                    type: string
+                  reviewerTier:
+                    type: string
+                  reviewerFamily:
+                    $ref: '#/components/schemas/ProviderFamily'
+                  meta:
+                    type: object
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: No reviewer available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/hivemind/trace:
+    post:
+      operationId: submitTrace
+      summary: Record a tool execution trace
+      description: Capture what the AI did for learning. Failed traces are auto-detected as mistakes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, tool, model, family, tier, input, output, success, duration]
+              properties:
+                projectId:
+                  type: string
+                  minLength: 1
+                tool:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                model:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                family:
+                  $ref: '#/components/schemas/ProviderFamily'
+                tier:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                input: {}
+                output: {}
+                success:
+                  type: boolean
+                duration:
+                  type: number
+                  minimum: 0
+                error:
+                  type: string
+                  maxLength: 10000
+      responses:
+        '200':
+          description: Trace recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recorded, mistakesDetected, meta]
+                properties:
+                  recorded:
+                    type: boolean
+                  mistakesDetected:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        errorType:
+                          type: string
+                        description:
+                          type: string
+                  warning:
+                    type: string
+                  meta:
+                    type: object
+
+  /v1/hivemind/mistake:
+    post:
+      operationId: reportMistake
+      summary: Report an AI mistake
+      description: Submit a human-verified mistake for the learning system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, errorType, description, rootCause, prevention, severity, model, family, tier]
+              properties:
+                projectId:
+                  type: string
+                  minLength: 1
+                errorType:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                rootCause:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                prevention:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                severity:
+                  $ref: '#/components/schemas/Severity'
+                model:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                family:
+                  $ref: '#/components/schemas/ProviderFamily'
+                tier:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                domain:
+                  type: string
+                  maxLength: 200
+      responses:
+        '201':
+          description: Mistake recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mistakeId]
+                properties:
+                  mistakeId:
+                    type: string
+
+  /v1/hivemind/memory:
+    get:
+      operationId: searchMemory
+      summary: Search project memory
+      description: Query persistent project context by keyword.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Memories found
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [memories]
+                properties:
+                  memories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Memory'
+    post:
+      operationId: writeMemory
+      summary: Store project memory
+      description: Write persistent context that follows users across tools and sessions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, content, type]
+              properties:
+                projectId:
+                  type: string
+                  minLength: 1
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 50000
+                type:
+                  $ref: '#/components/schemas/MemoryType'
+                importance:
+                  $ref: '#/components/schemas/Importance'
+                tags:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    maxLength: 100
+                relatedFiles:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: string
+                    maxLength: 500
+      responses:
+        '201':
+          description: Memory stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [memoryId]
+                properties:
+                  memoryId:
+                    type: string
+
+  /v1/hivemind/insights:
+    get:
+      operationId: getInsights
+      summary: Get performance insights
+      description: Returns KPM stats, bot performance, and recommendations.
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+        - name: botName
+          in: query
+          schema:
+            type: string
+        - name: metric
+          in: query
+          schema:
+            type: string
+            default: review
+      responses:
+        '200':
+          description: Insights retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [insights, meta]
+                properties:
+                  insights:
+                    type: object
+                    properties:
+                      metric:
+                        type: string
+                      recommendation:
+                        type: string
+                      botStats:
+                        type: array
+                        items:
+                          type: object
+                  meta:
+                    type: object
+
+  /v1/hivemind/keys:
+    post:
+      operationId: setKey
+      summary: Set BYOK provider key
+      description: Store a user-provided API key for a provider. Not yet implemented.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, apiKey]
+              properties:
+                provider:
+                  type: string
+                  enum: [openai, anthropic, google, xai]
+                apiKey:
+                  type: string
+                  minLength: 10
+                  maxLength: 500
+      responses:
+        '501':
+          description: Not yet implemented
+    get:
+      operationId: listKeys
+      summary: List BYOK keys
+      description: List stored provider keys. Not yet implemented.
+      responses:
+        '501':
+          description: Not yet implemented
+    delete:
+      operationId: revokeKey
+      summary: Revoke a BYOK key
+      description: Remove a stored provider key. Not yet implemented.
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '501':
+          description: Not yet implemented
